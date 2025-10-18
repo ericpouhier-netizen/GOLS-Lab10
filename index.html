@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GOLS Lab 10 — COLS Project (Interactive)</title>
+<meta name="description" content="Interactive demonstrations of the Coupled Order Lattice System (COLS): GOLS triangle and CRT torus.">
+<style>
+  :root{
+    --bg:#0b1220;--panel:#0f172a;--ink:#e5e7eb;--muted:#93a2b8;--grid:#1f2937;
+    --accent:#60a5fa;--ok:#34d399;--warn:#f59e0b;--bad:#ef4444;
+  }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  body{margin:0;background:var(--bg);color:var(--ink)}
+  header{padding:18px 20px;border-bottom:1px solid var(--grid);background:#0d1530}
+  header h1{margin:0;font-size:20px;letter-spacing:.2px}
+  header .sub{margin-top:6px;color:var(--muted);font-size:13px}
+  .wrap{max-width:1120px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 330px;gap:16px}
+  @media (max-width:1000px){.wrap{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--grid);border-radius:12px;padding:16px}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media (max-width:800px){.cards{grid-template-columns:1fr}}
+  .item{display:flex;flex-direction:column;gap:10px;border:1px solid #223048;border-radius:12px;padding:14px;background:#0c1629}
+  .item h3{margin:0;font-size:16px}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  a.btn{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:8px;border:1px solid #2a3b56;background:#10203a;color:#e5e7eb;text-decoration:none;font-weight:600}
+  a.btn.primary{background:var(--accent);border-color:#2563eb;color:#06152b}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2a3b56;font-size:12px;color:#cbd5e1}
+  footer{max-width:1120px;margin:16px auto 32px;color:#8aa0bf;font-size:12px;padding:0 18px}
+  .sep{height:1px;background:var(--grid);margin:12px 0}
+  code{background:#0b1a34;padding:2px 6px;border-radius:6px;border:1px solid #223048}
+</style>
+</head>
+<body>
+<header>
+  <h1>GOLS Lab 10 — COLS Project (Interactive)</h1>
+  <div class="sub">Interactive demonstrations of the Coupled Order Lattice System (COLS): the GOLS triangle and the CRT torus — a formal bridge between discrete modular arithmetic and continuous geometric order.</div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <section class="col">
+    <div class="card">
+      <h2 style="margin:0 0 12px 0">Interactive demos</h2>
+      <div class="cards">
+
+        <div class="item">
+          <h3>GOLS Lab 10 (main)</h3>
+          <div class="muted">Triangle GOLS, energies <em>E_uni / E_bi</em>, proximities <em>h_p, h_q</em>, factor detection and CRT torus trace. Self-contained.</div>
+          <div class="row">
+            <a class="btn primary" href="COLS_Lab10.html">Open</a>
+            <span class="badge">HTML</span>
+            <span class="badge">Self-contained</span>
+          </div>
+        </div>
+
+        <div class="item">
+          <h3>Torus — M = 275 (smooth)</h3>
+          <div class="muted">Residues on the torus (p×q), ε-bands, visual equidistribution and “alignment” events.</div>
+          <div class="row">
+            <a class="btn" href="COLS_Torus_M275_Smooth_V28.html">Open</a>
+            <span class="badge">HTML</span>
+          </div>
+        </div>
+
+        <div class="item">
+          <h3>Torus — M = 293 (prime)</h3>
+          <div class="muted">Prime modulus variant (no non-trivial gcd), reference dynamics.</div>
+          <div class="row">
+            <a class="btn" href="COLS_Torus_M293_Prime_V28.html">Open</a>
+            <span class="badge">HTML</span>
+          </div>
+        </div>
+
+        <div class="item">
+          <h3>Torus — M = 299 (13×23)</h3>
+          <div class="muted">Semiprime example (auto-CRT when factors are detected).</div>
+          <div class="row">
+            <a class="btn" href="COLS_Torus_M299_V28.html">Open</a>
+            <span class="badge">HTML</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 12px 0">Papers & Documentation</h2>
+      <div class="row">
+        <a class="btn" href="COLS_paper_V8_FINAL.pdf">Main paper (PDF)</a>
+        <a class="btn" href="COLS_additional_proofs_FINAL.pdf">Supplementary proofs (PDF)</a>
+        <a class="btn" href="COLS_Lab10_User_Manual_V2025.docx">User manual (DOCX)</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <aside class="col">
+    <div class="card">
+      <h2 style="margin:0 0 10px 0">About</h2>
+      <div class="muted">
+        The COLS framework unifies discrete modular arithmetic and continuous geometric order. 
+        The GOLS triangle is its geometric core: each exponent n becomes a resonance point where number theory unfolds into geometry.
+      </div>
+      <div class="sep"></div>
+      <div class="muted"><strong>DOI (Zenodo):</strong> <a href="https://doi.org/10.5281/zenodo.17383651" style="color:#93c5fd">10.5281/zenodo.17383651</a></div>
+      <div class="muted" style="margin-top:6px"><strong>Author:</strong> Éric Pouhier — 2025</div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 10px 0">How to use</h2>
+      <div class="muted">
+        These HTML labs are <em>self-contained</em>. Download or open directly in a modern browser (no external resources required).
+      </div>
+      <div class="sep"></div>
+      <div class="muted">License: <a href="https://creativecommons.org/licenses/by/4.0/" style="color:#93c5fd">CC BY 4.0</a></div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  © 2025 Éric Pouhier — COLS Project Series. GOLS Lab 10 Beta.
+</footer>
+</body>
+</html>
