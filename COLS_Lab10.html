@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>COLS Lab — Géométrie des ordres (A, h_p/h_q, E_uni/E_bi, CRT)</title>
+<style>
+  :root{
+    --bg:#0f172a;--panel:#111827;--ink:#e5e7eb;--muted:#94a3b8;
+    --accent:#60a5fa;--ok:#34d399;--warn:#f59e0b;--bad:#ef4444;--grey:#94a3b8;
+    --grid:#1f2937;--line:#334155;--pink:#f472b6;--violet:#a78bfa;
+  }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  body{margin:0;background:var(--bg);color:var(--ink)}
+  header{padding:12px 16px;border-bottom:1px solid var(--grid);background:#0e1426}
+  header h1{margin:0;font-size:18px;letter-spacing:.3px}
+  .wrap{display:grid;grid-template-columns:340px 1fr 360px;gap:14px;padding:14px}
+  @media (max-width:1200px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--grid);border-radius:12px;padding:12px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  input,select,button{padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:#0b1220;color:var(--ink)}
+  input[type="range"]{width:100%}
+  button.primary{background:var(--accent);border-color:#2563eb;color:#051223;font-weight:600}
+  button.ghost{background:transparent}
+  .pill{padding:2px 8px;border:1px solid #273245;border-radius:999px;font-size:12px;color:#cbd5e1}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .kpi{display:flex;flex-direction:column;gap:4px;background:#0b1220;border:1px solid var(--grid);border-radius:8px;padding:8px}
+  .kpi .v{font-variant-numeric:tabular-nums}
+  canvas{background:#0b1220;border:1px solid var(--grid);border-radius:12px}
+  .sep{height:1px;background:var(--grid);margin:10px 0}
+  .legend{font-size:12px;color:#a3b2c9;margin-top:6px;display:flex;gap:14px;flex-wrap:wrap}
+  .legitem{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+  .tooltip{position:fixed;pointer-events:none;background:#111827;border:1px solid #334155;color:#e5e7eb;
+    padding:6px 8px;border-radius:8px;font-size:12px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;white-space:nowrap}
+  .table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  .table th,.table td{border:1px solid #273245;padding:6px 8px}
+  .table th{background:#0b1220;color:#cbd5e1;text-align:left}
+  footer{margin:12px 16px;color:#8aa0bf;font-size:12px}
+  .disabled{opacity:.35}
+</style>
+</head>
+<body>
+<header>
+  <h1>COLS Lab — Triangle (A), Proximités h<sub>p</sub>/h<sub>q</sub>, Énergies E<sub>uni</sub>/E<sub>bi</sub>, CRT</h1>
+</header>
+
+<div class="wrap">
+  <!-- Contrôles -->
+  <section class="card">
+    <div class="row"><strong>Module M (décimal)</strong></div>
+    <div class="row"><input id="inputM" type="text" placeholder="ex : 299 (13×23)"/></div>
+    <div class="row">
+      <button id="btnDemo299">Ex 299 (p=13, q=23)</button>
+      <button id="btnMid">n = ⌊M/2⌋</button>
+      <span id="bitsInfo" class="pill">bits: –</span>
+    </div>
+
+    <div class="sep"></div>
+    <div class="row"><strong>Base a</strong></div>
+    <div class="row">
+      <select id="baseA">
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="5">5</option>
+        <option value="7">7</option>
+      </select>
+    </div>
+
+    <div class="sep"></div>
+    <div class="row"><strong>Exposant n</strong></div>
+    <div class="row">
+      <input id="rangeN" type="range" min="0" max="100" value="0">
+      <input id="inputN" type="number" min="0" step="1" value="0">
+    </div>
+    <div class="row">
+      <button id="btnPlay">▶︎ Play</button>
+      <button id="btnNextEven">n pair suivant</button>
+    </div>
+
+    <div class="sep"></div>
+    <div class="row"><strong>CRT (p, q)</strong> <span class="muted">(p×q doit = M — auto si facteur détecté)</span></div>
+    <div class="row"><input id="inputP" type="text" placeholder="p"/><input id="inputQ" type="text" placeholder="q"/></div>
+    <div class="row">
+      <button id="btnCRT">Valider CRT</button>
+      <span id="crtStat" class="pill">CRT: inactif</span>
+    </div>
+    <div class="row">
+      <label class="small"><input id="traceOn" type="checkbox" checked> Trace on</label>
+      <label class="small">ε torus <input id="epsTorus" type="number" step="0.01" value="0.10" style="width:70px"></label>
+    </div>
+
+    <div class="sep"></div>
+    <div class="row"><strong>Fichiers</strong></div>
+    <div class="row">
+      <button id="btnExportPNG">Export PNG (vue)</button>
+      <button id="btnExportCSV">Export CSV (événements)</button>
+    </div>
+
+    <div class="sep"></div>
+    <div class="muted" style="font-size:12px;line-height:1.35">
+      <b>Notes.</b> γ(n)=90° (Thalès) · A(n)=arcsin(|sin(πn/M)|)∈[0°,90°].<br/>
+      Sans CRT : E≈(A/90)·(1−h<sub>global</sub>) avec h<sub>global</sub>=min(|a^{n/2}±1|)/M.<br/>
+      Avec CRT : h<sub>p</sub>, h<sub>q</sub> ⇒ E<sub>uni</sub>=A/90·(1−h<sub>min</sub>), E<sub>bi</sub>=A/90·(1−h<sub>max</sub>).
+    </div>
+  </section>
+
+  <!-- Centre -->
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>Triangle GOLS (A) — halo ∝ E (global ou uni/bi)</strong>
+      <span id="triInfo" class="muted">θ, A, h_global / h_p/q, E, gcd±, facteurs…</span>
+    </div>
+    <canvas id="tri" width="680" height="360"></canvas>
+    <div class="legend" id="legendGraph">
+      <span class="legitem" data-key="A"><span class="dot" style="background:var(--accent)"></span>A</span>
+      <span class="legitem" data-key="hmin"><span class="dot" style="background:var(--ok)"></span>h_min</span>
+      <span class="legitem" data-key="hmax"><span class="dot" style="background:var(--grey)"></span>h_max</span>
+      <span class="legitem" data-key="Euni"><span class="dot" style="background:var(--violet)"></span>E_uni</span>
+      <span class="legitem" data-key="Ebi"><span class="dot" style="background:var(--pink)"></span>E_bi</span>
+      <span class="muted" style="margin-left:auto">Clique sur une couleur pour afficher/masquer</span>
+    </div>
+
+    <div class="sep"></div>
+    <div class="row" style="justify-content:space-between">
+      <strong>Barres live (A, h_min, h_max, E_uni, E_bi)</strong>
+      <span id="liveCnt" class="muted">samples: 0 • CRT pts: 0</span>
+    </div>
+    <canvas id="graph" width="680" height="160"></canvas>
+
+    <div class="sep"></div>
+    <div class="row" style="justify-content:space-between">
+      <strong>CRT (trace + ε)</strong>
+      <span id="crtInfo" class="muted">–</span>
+    </div>
+    <canvas id="crt" width="680" height="260"></canvas>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--ok)"></span>unilatéral</span>
+      <span><span class="dot" style="background:var(--warn)"></span>bilatéral</span>
+      <span><span class="dot" style="background:var(--grey)"></span>neutre</span>
+    </div>
+  </section>
+
+  <!-- Droite -->
+  <section class="card">
+    <div class="grid3">
+      <div class="kpi"><div class="muted small">θ = 2πn/M</div><div class="v" id="thetaOut">–</div></div>
+      <div class="kpi"><div class="muted small">A (°)</div><div class="v" id="AOut">–</div></div>
+      <div class="kpi"><div class="muted small">E (glob/uni/bi)</div><div class="v" id="EOut">–</div></div>
+    </div>
+    <div class="grid3" style="margin-top:8px">
+      <div class="kpi"><div class="muted small">h_global</div><div class="v" id="hgOut">–</div></div>
+      <div class="kpi"><div class="muted small">h_p</div><div class="v" id="hpOut">–</div></div>
+      <div class="kpi"><div class="muted small">h_q</div><div class="v" id="hqOut">–</div></div>
+    </div>
+    <div class="grid2" style="margin-top:8px">
+      <div class="kpi"><div class="muted small">gcd(a^{n/2}−1, M)</div><div class="v" id="gMinus">–</div></div>
+      <div class="kpi"><div class="muted small">gcd(a^{n/2}+1, M)</div><div class="v" id="gPlus">–</div></div>
+    </div>
+    <div class="sep"></div>
+    <div class="muted" id="effBox">n_eff: – | v2: –</div>
+    <canvas id="miniTri" width="180" height="140" style="display:none;margin-top:6px"></canvas>
+
+    <div class="sep"></div>
+    <strong>Historique des facteurs</strong>
+    <table class="table" id="factTable">
+      <thead><tr><th>#</th><th>n</th><th>base</th><th>±</th><th>facteur</th><th>cofacteur</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<footer>
+  COLS Lab — © Éric Pouhier, 2025 — Version demo (HTML autonome, aucune ressource externe).
+</footer>
+
+<script>
+/* ===== Utils BigInt ===== */
+const $=s=>document.querySelector(s);
+function onlyDigits(s){return (s||"").replace(/[^\d]/g,"");}
+function toBIstrict(s){const t=onlyDigits(s); return t? BigInt(t) : null;}
+function bitLen(b){ if(!b||b<=0n) return 0; let k=0n,x=b; while(x>0n){x>>=1n;k++} return Number(k); }
+function gcd(a,b){ a=a<0n?-a:a; b=b<0n?-b:b; while(b){ const t=a%b; a=b; b=t; } return a; }
+function modPow(a,e,m){ a=((a%m)+m)%m; let r=1n,x=a,p=e; while(p>0n){ if(p&1n) r=(r*x)%m; x=(x*x)%m; p>>=1n; } return r; }
+function modDist(x,m){ x=((x%m)+m)%m; return x<=m-x?x:(m-x); }
+function fracBI(x,m,scale=1_000_000n){ if(!m||m===0n) return 0; const xn=((x%m)+m)%m; const q=(xn*scale)/m; return Number(q)/Number(scale); }
+
+/* ===== State ===== */
+let M=0n,n=0n,P=0n,Q=0n,crtOK=false,playing=false;
+let pointsAH=[], crtTrail=[], eventsCSV=[];
+let lastEff=null;
+const seriesOn={A:true,hmin:true,hmax:true,Euni:true,Ebi:true}; // toggles série
+
+/* ===== Tooltip ===== */
+const tip=$("#tooltip");
+function showTip(html,x,y){ tip.innerHTML=html; tip.style.left=(x+12)+"px"; tip.style.top=(y+12)+"px"; tip.style.display="block"; }
+function hideTip(){ tip.style.display="none"; }
+
+/* ===== Mini-triangle (n_eff) ===== */
+const mini=$("#miniTri"), mctx=mini.getContext("2d");
+function drawMiniTriangle(nEff){
+  if (!nEff || !M || M<=0n){ mini.style.display="none"; return; }
+  mini.style.display="block";
+  mctx.clearRect(0,0,mini.width,mini.height);
+  mctx.fillStyle="#0b1220"; mctx.fillRect(0,0,mini.width,mini.height);
+  const cx=mini.width/2, cy=mini.height/2, R=Math.min(cx,cy)-18;
+  mctx.strokeStyle="#334155"; mctx.beginPath(); mctx.arc(cx,cy,R,0,Math.PI*2); mctx.stroke();
+  const theta=2*Math.PI*fracBI(nEff,M);
+  const S0=[1,0], SN=[-1,0], Sn=[Math.cos(theta),Math.sin(theta)];
+  const p=pt=>[cx+R*pt[0], cy-R*pt[1]];
+  mctx.strokeStyle="#60a5fa"; mctx.beginPath(); mctx.moveTo(...p(S0)); mctx.lineTo(...p(Sn)); mctx.lineTo(...p(SN)); mctx.closePath(); mctx.stroke();
+  mctx.fillStyle="#93c5fd"; mctx.beginPath(); mctx.arc(...p(S0),4,0,Math.PI*2); mctx.fill();
+  mctx.beginPath(); mctx.arc(...p(SN),4,0,Math.PI*2); mctx.fill();
+  mctx.fillStyle="#ef4444"; mctx.beginPath(); mctx.arc(...p(Sn),5,0,Math.PI*2); mctx.fill();
+}
+
+/* ===== Historique & CSV ===== */
+function pushFactor(nVal, base, sign, f, cf){
+  const tb=$("#factTable tbody");
+  const idx = tb.children.length + 1;
+  const tr=document.createElement("tr");
+  tr.innerHTML = `<td>${idx}</td><td>${nVal.toString()}</td><td>${base.toString()}</td><td>${sign}</td><td>${f.toString()}</td><td>${cf.toString()}</td>`;
+  tb.prepend(tr);
+  eventsCSV.push({
+    n: nVal.toString(), base: base.toString(), sign,
+    factor: f.toString(), cofactor: cf.toString(),
+    A: $("#AOut").textContent,
+    hg: $("#hgOut").textContent, hp: $("#hpOut").textContent, hq: $("#hqOut").textContent,
+    E: $("#EOut").textContent
+  });
+}
+
+/* ===== Gestion standardisée d’un événement facteur ===== */
+function handleFactorEvent(aBase, nCurrent, g1, g2, pOpt=null, qOpt=null){
+  let sign = (g1!==1n && g1!==M) ? "-" : (g2!==1n && g2!==M ? "+" : "?");
+  let m=nCurrent, v2=0, found=null, sgn=sign;
+  while (m%2n===0n && m>0n){
+    const tt=m/2n, y=modPow(aBase, tt, M);
+    const gm=gcd((y-1n+M)%M,M); if (gm!==1n && gm!==M){found=gm; sgn="-"; break;}
+    const gp=gcd((y+1n)%M,M); if (gp!==1n && gp!==M){found=gp; sgn="+"; break;}
+    m=tt; v2++;
+  }
+  if (!found){
+    found = (g1!==1n && g1!==M) ? g1 : g2;
+    if (found===1n || found===M) return;
+  }
+  const cf = M/found;
+
+  if (!crtOK){
+    const p = pOpt ?? found, q = qOpt ?? cf;
+    $("#inputP").value = p.toString();
+    $("#inputQ").value = q.toString();
+    P=p; Q=q; crtOK=true; crtTrail=[]; $("#crtStat").textContent="CRT: OK (auto)";
+  }
+
+  pushFactor(nCurrent, aBase, sgn, found, cf);
+  lastEff = {nEff:m, v2};
+  $("#effBox").textContent = `n_eff: ${m.toString()} | v2: ${v2}`;
+  drawMiniTriangle(m);
+  drawCRT();
+}
+
+/* ===== Graphe (une seule définition) ===== */
+const g=$("#graph"), gctx=g.getContext("2d");
+function drawGraph(){
+  gctx.clearRect(0,0,g.width,g.height);
+  gctx.fillStyle="#0b1220"; gctx.fillRect(0,0,g.width,g.height);
+  if(pointsAH.length<1) return;
+  const minN=pointsAH[0].n, maxN=pointsAH[pointsAH.length-1].n;
+  const xScale=v=>40+(g.width-60)*((v-minN)/(maxN-minN||1));
+  const W=(g.width-60)/Math.max(1,(pointsAH.length));
+
+  for(const p of pointsAH){
+    const x = xScale(p.n) - W*0.6;
+    if (seriesOn.A){
+      const hA = (p.A/180)*(g.height-40)*2;
+      gctx.fillStyle="var(--accent)"; gctx.fillRect(x, (g.height-24)-hA, Math.max(1,W*0.5), hA);
+    }
+    if (seriesOn.hmin && p.hmin!=null){
+      const hh = (p.hmin)*(g.height-40);
+      gctx.fillStyle="var(--ok)"; gctx.fillRect(x+Math.max(1,W*0.55), (g.height-24)-hh, Math.max(1,W*0.18), hh);
+    }
+    if (seriesOn.hmax && p.hmax!=null){
+      const hk = (p.hmax)*(g.height-40);
+      gctx.fillStyle="var(--grey)"; gctx.fillRect(x+Math.max(1,W*0.75), (g.height-24)-hk, Math.max(1,W*0.18), hk);
+    }
+    if (seriesOn.Euni){
+      const Eu = ((p.Euni>0)?p.Euni:p.Eglob)*(g.height-40);
+      gctx.fillStyle="var(--violet)"; gctx.fillRect(x+Math.max(1,W*0.95), (g.height-24)-Eu, Math.max(1,W*0.18), Eu);
+    }
+    if (seriesOn.Ebi){
+      const Eb = ((p.Ebi>0)?p.Ebi:p.Eglob)*(g.height-40);
+      gctx.fillStyle="var(--pink)"; gctx.fillRect(x+Math.max(1,W*1.15), (g.height-24)-Eb, Math.max(1,W*0.18), Eb);
+    }
+  }
+}
+document.querySelectorAll("#legendGraph .legitem").forEach(item=>{
+  item.addEventListener("click", ()=>{
+    const key = item.getAttribute("data-key");
+    seriesOn[key] = !seriesOn[key];
+    item.classList.toggle("disabled", !seriesOn[key]);
+    drawGraph();
+  });
+});
+
+/* ===== CRT (une seule définition) ===== */
+const crt=$("#crt"), cctx=crt.getContext("2d");
+function drawCRT(){
+  cctx.clearRect(0,0,crt.width,crt.height);
+  cctx.fillStyle="#0b1220"; cctx.fillRect(0,0,crt.width,crt.height);
+  const W=crt.width,H=crt.height,r=60,cx1=120,cx2=300,cy=H/2,sqX=420,sqY=24,sqW=W-sqX-20,sqH=H-48;
+  const eps=parseFloat($("#epsTorus").value)||0.1;
+
+  cctx.strokeStyle="#334155"; cctx.beginPath(); cctx.arc(cx1,cy,r,0,Math.PI*2); cctx.stroke();
+  cctx.beginPath(); cctx.arc(cx2,cy,r,0,Math.PI*2); cctx.stroke();
+  cctx.fillStyle="#cbd5e1"; cctx.font="12px system-ui";
+  cctx.fillText(`mod p=${(P||0n).toString()}`, cx1-30, 16);
+  cctx.fillText(`mod q=${(Q||0n).toString()}`, cx2-30, 16);
+
+  cctx.fillStyle="#93c5fd";
+  cctx.beginPath(); cctx.arc(cx1+r,cy,3,0,Math.PI*2); cctx.fill();
+  cctx.beginPath(); cctx.arc(cx1-r,cy,3,0,Math.PI*2); cctx.fill();
+  cctx.beginPath(); cctx.arc(cx2+r,cy,3,0,Math.PI*2); cctx.fill();
+  cctx.beginPath(); cctx.arc(cx2-r,cy,3,0,Math.PI*2); cctx.fill();
+
+  cctx.strokeStyle="#334155"; cctx.strokeRect(sqX,sqY,sqW,sqH);
+  cctx.fillStyle="rgba(234,179,8,.08)";
+  cctx.fillRect(sqX, sqY, sqW*eps, sqH);
+  cctx.fillRect(sqX+sqW*(1-eps), sqY, sqW*eps, sqH);
+  cctx.fillRect(sqX, sqY, sqW, sqH*eps);
+  cctx.fillRect(sqX, sqY+sqH*(1-eps), sqW, sqH*eps);
+
+  if(crtOK && $("#traceOn").checked && (n%2n===0n)){
+    const aBase=BigInt(parseInt($("#baseA").value||"3",10));
+    const xp=modPow(aBase,n/2n,P), xq=modPow(aBase,n/2n,Q);
+    const X=sqX+sqW*fracBI(xp,P), Y=sqY+sqH*(1-fracBI(xq,Q));
+    crtTrail.push({x:X,y:Y, idx:Number(n), xp,xq}); if(crtTrail.length>500) crtTrail.shift();
+    $("#crtInfo").textContent=`xp/p=${fracBI(xp,P).toFixed(4)} • xq/q=${fracBI(xq,Q).toFixed(4)}`;
+    const drawMarker=(cx,cy,mod,val,col)=>{
+      const ang=2*Math.PI*fracBI(val, mod);
+      const x=cx + r*Math.cos(ang), y=cy - r*Math.sin(ang);
+      cctx.fillStyle=col; cctx.beginPath(); cctx.arc(x,y,5,0,Math.PI*2); cctx.fill();
+    };
+    if (P>1n) drawMarker(cx1,cy,P,xp,"#34d399");
+    if (Q>1n) drawMarker(cx2,cy,Q,xq,"#34d399");
+  }
+
+  const pts=crtTrail.slice(-500);
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i], a=(i+1)/pts.length;
+    const nearX = (p.x <= sqX+sqW*eps) || (p.x >= sqX+sqW*(1-eps));
+    const nearY = (p.y <= sqY+sqH*eps) || (p.y >= sqY+sqH*(1-eps));
+    let col = `rgba(148,163,184,${0.08+0.6*a})`;
+    if (nearX && nearY) col = `rgba(245,158,11,${0.08+0.6*a})`;
+    else if (nearX || nearY) col = `rgba(52,211,153,${0.08+0.6*a})`;
+    cctx.fillStyle=col; cctx.beginPath(); cctx.arc(p.x,p.y,3,0,Math.PI*2); cctx.fill();
+  }
+  $("#liveCnt").textContent = `samples: ${pointsAH.length} • CRT pts: ${crtTrail.length}`;
+}
+
+/* ===== Triangle principal ===== */
+const tri=$("#tri"), tctx=tri.getContext("2d");
+function drawTriangle(){
+  tctx.clearRect(0,0,tri.width,tri.height);
+  tctx.fillStyle="#0b1220"; tctx.fillRect(0,0,tri.width,tri.height);
+  if(!M||M<=0n) return;
+
+  const cx=tri.width/2, cy=tri.height/2, R=Math.min(cx,cy)-30;
+  tctx.strokeStyle="#334155"; tctx.beginPath(); tctx.arc(cx,cy,R,0,Math.PI*2); tctx.stroke();
+  tctx.strokeStyle="#1f2937"; tctx.beginPath(); tctx.moveTo(cx-R-6,cy); tctx.lineTo(cx+R+6,cy); tctx.stroke();
+  tctx.beginPath(); tctx.moveTo(cx,cy-R-6); tctx.lineTo(cx,cy+R+6); tctx.stroke();
+
+  const theta=2*Math.PI*fracBI(n,M);
+  const S0=[1,0], SN=[-1,0], Sn=[Math.cos(theta),Math.sin(theta)];
+
+  const Adeg = Math.asin(Math.abs(Math.sin(Math.PI*Number(n%M)/Number(M))))*180/Math.PI;
+
+  const aBase=BigInt(parseInt($("#baseA").value||"3",10));
+  let hg=null, hp=null, hq=null, hmin=null, hmax=null;
+  let gminus="–", gplus="–", fBadge="";
+
+  if (n%2n===0n){
+    const t=n/2n;
+    const xg = modPow(aBase, t, M);
+    const dg = Math.min( fracBI(modDist(xg-1n,M),M), fracBI(modDist(xg+1n,M),M) );
+    hg = dg;
+
+    const g1 = gcd((xg-1n+M)%M,M), g2=gcd((xg+1n)%M,M);
+    gminus = (g1===1n||g1===M) ? "1 (ou M)" : String(g1);
+    gplus  = (g2===1n||g2===M) ? "1 (ou M)" : String(g2);
+
+    if (crtOK){
+      if (P>1n){
+        const xp = modPow(aBase, t, P);
+        hp = Math.min( fracBI(modDist(xp-1n,P),P), fracBI(modDist(xp+1n,P),P) );
+      }
+      if (Q>1n){
+        const xq = modPow(aBase, t, Q);
+        hq = Math.min( fracBI(modDist(xq-1n,Q),Q), fracBI(modDist(xq+1n,Q),Q) );
+      }
+      if (hp==null && hq==null){ hmin=hmax=null; }
+      else if (hp==null){ hmin=hq; hmax=hq; }
+      else if (hq==null){ hmin=hp; hmax=hp; }
+      else { hmin=Math.min(hp,hq); hmax=Math.max(hp,hq); }
+
+      if ( (g1!==1n && g1!==M) || (g2!==1n && g2!==M) ){
+        handleFactorEvent(aBase, n, g1, g2);
+        fBadge = " | facteur détecté (CRT actif)";
+      }
+    } else {
+      if ( (g1!==1n && g1!==M) || (g2!==1n && g2!==M) ){
+        const f = (g1!==1n && g1!==M) ? g1 : g2;
+        const cf = M/f;
+        handleFactorEvent(aBase, n, g1, g2, f, cf);
+        fBadge = ` | facteurs auto: p=${f.toString()}, q=${cf.toString()}`;
+      }
+    }
+  }
+
+  let Euni=0, Ebi=0, Eglob=0;
+  if (n%2n===0n){
+    if (crtOK){
+      Euni = (hmin==null) ? 0 : (Adeg/90)*(1-hmin);
+      Ebi  = (hmax==null) ? 0 : (Adeg/90)*(1-hmax);
+    } else {
+      Eglob = (hg==null) ? 0 : (Adeg/90)*(1-hg);
+    }
+  }
+
+  const p=pt=>[cx+R*pt[0], cy-R*pt[1]];
+  const P0=p(S0), PN=p(SN), Pn=p(Sn);
+  const hot = a => `rgba(239,68,68,${a})`, cold="#60a5fa";
+  const heat = crtOK ? Ebi : Eglob;
+
+  tctx.lineWidth=2; tctx.strokeStyle = (heat>0.05)? hot(0.20+0.50*heat) : cold;
+  tctx.beginPath(); tctx.moveTo(...P0); tctx.lineTo(...PN); tctx.stroke();
+
+  tctx.strokeStyle = (heat>0.05)? hot(0.30+0.65*heat) : cold;
+  tctx.beginPath(); tctx.moveTo(...P0); tctx.lineTo(...Pn); tctx.stroke();
+  tctx.beginPath(); tctx.moveTo(...PN); tctx.lineTo(...Pn); tctx.stroke();
+
+  tctx.fillStyle="#93c5fd"; tctx.beginPath(); tctx.arc(...P0,5,0,Math.PI*2); tctx.fill();
+  tctx.beginPath(); tctx.arc(...PN,5,0,Math.PI*2); tctx.fill();
+
+  tctx.save();
+  tctx.shadowColor = `rgba(239,68,68,${0.45 + 0.45*heat})`;
+  tctx.shadowBlur  = 14 + 30*heat;
+  let colSn = (heat>=0.35? "#ef4444" : heat>=0.18? "#f59e0b" : "#34d399");
+  tctx.fillStyle = colSn; tctx.beginPath(); tctx.arc(...Pn,6,0,Math.PI*2); tctx.fill();
+  tctx.restore();
+
+  $("#thetaOut").textContent = (2*Math.PI*fracBI(n,M)).toFixed(6);
+  $("#AOut").textContent     = Adeg.toFixed(3);
+  $("#hgOut").textContent    = (hg==null?"–":hg.toFixed(5));
+  $("#hpOut").textContent    = (hp==null?"–":hp.toFixed(5));
+  $("#hqOut").textContent    = (hq==null?"–":hq.toFixed(5));
+  if (crtOK) $("#EOut").textContent = `${Euni.toFixed(4)} / ${Ebi.toFixed(4)} (uni/bi)`;
+  else       $("#EOut").textContent = `${Eglob.toFixed(4)} (global)`;
+  $("#gMinus").textContent   = gminus; $("#gPlus").textContent = gplus;
+  $("#triInfo").textContent  = `θ=${(2*Math.PI*fracBI(n,M)).toFixed(6)} | A=${Adeg.toFixed(2)}° | h_glob=${hg==null?"–":hg.toFixed(4)} | h_p=${hp==null?"–":hp.toFixed(4)} h_q=${hq==null?"–":hq.toFixed(4)} | E=${crtOK? (Euni.toFixed(3)+"/"+Ebi.toFixed(3)) : Eglob.toFixed(3)}${fBadge}`;
+
+  /* ATTENTION : variables de tracé distinctes pour éviter toute redéclaration */
+  const hminPlot = (hp==null||hq==null) ? (hp??hq) : Math.min(hp,hq);
+  const hmaxPlot = (hp==null||hq==null) ? (hp??hq) : Math.max(hp,hq);
+  pointsAH.push({n:Number(n), A:Adeg, hmin:hminPlot, hmax:hmaxPlot, Euni, Ebi, Eglob});
+  if (pointsAH.length>800) pointsAH.shift();
+  drawGraph();
+  $("#liveCnt").textContent = `samples: ${pointsAH.length} • CRT pts: ${crtTrail.length}`;
+}
+
+/* ===== Exports ===== */
+$("#btnExportPNG").addEventListener("click", ()=>{
+  const triC=$("#tri"), graphC=$("#graph"), crtC=$("#crt");
+  const H = triC.height + 10 + graphC.height + 10 + crtC.height;
+  const E = document.createElement("canvas"); E.width=triC.width; E.height=H;
+  const ex=E.getContext("2d"); ex.fillStyle="#0b1220"; ex.fillRect(0,0,E.width,E.height);
+  let y=0; ex.drawImage(triC,0,y); y+=triC.height+10; ex.drawImage(graphC,0,y); y+=graphC.height+10; ex.drawImage(crtC,0,y);
+  const url=E.toDataURL("image/png"); const a=document.createElement("a"); a.href=url; a.download="cols_view.png"; a.click();
+});
+$("#btnExportCSV").addEventListener("click", ()=>{
+  const cols=["n","base","sign","factor","cofactor","A","hg","hp","hq","E"];
+  const lines=[cols.join(",")].concat(eventsCSV.map(r=> cols.map(c=> r[c]??"").join(",")));
+  const blob=new Blob([lines.join("\n")],{type:"text/csv"}); const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="cols_events.csv"; a.click(); URL.revokeObjectURL(url);
+});
+
+/* ===== Reset / Setters / Listeners ===== */
+function clearAllForNewM(){
+  pointsAH=[]; crtTrail=[]; $("#factTable tbody").innerHTML="";
+  lastEff=null; $("#effBox").textContent="n_eff: – | v2: –"; mini.style.display="none";
+  $("#crtStat").textContent="CRT: inactif"; crtOK=false; eventsCSV=[];
+}
+function setM(raw){
+  const cleaned=onlyDigits(raw); $("#inputM").value=cleaned;
+  const m=toBIstrict(cleaned); if(!m||m<=1n){ return; }
+  M=m; $("#bitsInfo").textContent="bits: "+bitLen(M);
+  $("#rangeN").max = String(Math.min(Number(M-1n), 1e6));
+  clearAllForNewM(); setN(M/2n);
+}
+function setN(raw){
+  const bi=toBIstrict(String(raw)); n=(bi===null)?0n:bi;
+  if(M>0n && n>=M) n=M-1n;
+  $("#inputN").value=String(n);
+  $("#rangeN").value=String(Number(n % BigInt($("#rangeN").max||"100")));
+  drawTriangle(); drawCRT();
+}
+$("#btnDemo299").addEventListener("click",()=>{ $("#inputM").value="299"; setM("299"); $("#inputP").value="13"; $("#inputQ").value="23"; validateCRT(); });
+$("#btnMid").addEventListener("click",()=> setN(M/2n));
+$("#inputM").addEventListener("input",(e)=> setM(e.target.value));
+$("#inputN").addEventListener("input",(e)=> setN(e.target.value));
+$("#rangeN").addEventListener("input",(e)=> setN(e.target.value));
+$("#baseA").addEventListener("change",()=>{ drawTriangle(); drawCRT(); });
+$("#traceOn").addEventListener("change",()=> drawCRT());
+$("#epsTorus").addEventListener("change",()=> drawCRT());
+$("#btnNextEven").addEventListener("click",()=> setN( (n%2n===0n)?(n+2n):(n+1n) ));
+$("#btnPlay").addEventListener("click",()=>{ playing=!playing; $("#btnPlay").textContent=playing?"⏸":"▶︎";
+  if(playing)(function loop(){ if(!playing)return; setN( crtOK ? (n+2n) : (n+1n) ); requestAnimationFrame(loop); })();
+});
+$("#btnCRT").addEventListener("click", validateCRT);
+function validateCRT(){
+  const p=toBIstrict($("#inputP").value), q=toBIstrict($("#inputQ").value);
+  if(!M||M<=1n){ $("#crtStat").textContent="CRT: M non défini"; crtOK=false; return; }
+  if (p===1n && q===M){ P=1n; Q=M; crtOK=true; crtTrail=[]; $("#crtStat").textContent="CRT: OK (premier: q=M)"; drawCRT(); return; }
+  if (q===1n && p===M){ P=M; Q=1n; crtOK=true; crtTrail=[]; $("#crtStat").textContent="CRT: OK (premier: p=M)"; drawCRT(); return; }
+  if(!p||!q||p<=1n||q<=1n){ $("#crtStat").textContent="CRT: p,q invalides"; crtOK=false; return; }
+  if(p*q!==M){ $("#crtStat").textContent="CRT: p×q ≠ M"; crtOK=false; return; }
+  P=p; Q=q; crtOK=true; crtTrail=[]; $("#crtStat").textContent="CRT: OK"; drawCRT();
+}
+
+/* CRT tooltip */
+crt.addEventListener("mousemove",(e)=>{
+  const r=crt.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const pts=crtTrail||[]; let best=null,bD=1e9;
+  for(const p of pts){ const d=(p.x-mx)**2+(p.y-my)**2; if(d<bD && d<100){bD=d;best=p} }
+  if(best && crtOK){
+    showTip(`<div><b>n</b> ${best.idx}</div><div>xp/p=${fracBI(best.xp,P).toFixed(6)}</div><div>xq/q=${fracBI(best.xq,Q).toFixed(6)}</div>`, e.clientX,e.clientY);
+  } else hideTip();
+});
+crt.addEventListener("mouseleave", hideTip);
+
+/* Init */
+$("#triInfo").textContent="";
+</script>
+</body>
+</html>
